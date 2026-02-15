@@ -1,0 +1,568 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "*",
+          "loadPreviousSession": "memory"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        11328,
+        7408
+      ],
+      "id": "470db05d-7678-4594-8e93-3846d91c7328",
+      "name": "When chat message received",
+      "webhookId": "187f7214-634a-4ba4-ae42-f1518eb50fa2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nconst body = inputData.body || {};\nconst query = inputData.query || {};\nconst headers = inputData.headers || {};\n\nconst visitorId = body.visitorId || query.visitorId || headers['x-visitor-id'];\nconst clientId = (body.metadata && body.metadata.clientId) || '3478eb5b-0e0d-4399-b878-cb49b3314653';\nconst chatInput = body.chatInput || body.message || query.chatInput || inputData.chatInput;\n\nreturn {\n  json: {\n    visitorId,\n    clientId,\n    chatInput,\n    sessionId: body.sessionId || 'session-' + visitorId\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11664,
+        7392
+      ],
+      "id": "08108d5a-d029-4f50-8d26-de4cd34e876a",
+      "name": "Preparar Datos"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Eres el asistente virtual 'Agente Legal'. \n\n🔹 CONTEXTO:\n- Visitante ID: {{ $('Preparar Datos').item.json.visitorId }}\n\n🔹 REGLAS DE OPERACIÓN:\n1. PERSONALIZACIÓN: Sé amable y profesional.\n\n2. BASATE EN HECHOS: Antes de responder, consulta SIEMPRE la herramienta 'knowledge_base'. No inventes leyes.\n\n3. MODO VENTAS (NIVEL 3):\n   - Tu objetivo no es solo chatear, es CERRAR CITAS.\n   - Si el usuario dice 'urgente', 'emergencia', 'cuánto cuesta' o parece tener un caso real, OFRECE LA SOLUCIÓN.\n   - JAMÁS des precios específicos de defensa sin evaluar, pero SÍ ofrece la Consulta Inicial.\n\n4. ACCIONES DE CIERRE:\n   - Link de pago: \"Para reservar tu consulta, usa este link seguro: 💳 [Pagar Consulta $50](https://bit.ly/4r57xhm)\"\n\n5. 🚨 AGENDAMIENTO AUTOMÁTICO:\n   Paso 1: Usa 'consultar_disponibilidad' para ver horarios libres (9am-3pm, lunes a viernes)\n   Paso 2: Usuario elige fecha/hora y PAGA ($50)\n   Paso 3: Cuando el usuario diga \"pagué\", \"listo\", \"ya pagué\", \"transferí\", \"complete el pago\":\n      - USA INMEDIATAMENTE la herramienta 'auto_agendar_consulta'\n      - EXTRAE la fecha/hora acordada en formato ISO 8601 (AAAA-MM-DDTHH:mm:ss-03:00)\n      - EXTRAE el tema principal de la consulta\n      - NO pidas confirmación adicional\n      - Responde: \"¡Perfecto! 🎉 Tu consulta está confirmada. Recibirás un email con:\n        ✅ Invitación de calendario\n        ✅ Link de Google Meet\n        ✅ Recordatorios automáticos\n        ¡Nos vemos pronto!\"\n\n6. MEMORIA DE CONVERSACIÓN:\n   - Mantén contexto de toda la conversación.\n   - Si es una conversación que continúa, retoma donde quedaron\n\n🔹 RECOPILACIÓN DE DATOS (PRIORIDAD ALTA):\n- Tu objetivo es calificar el lead. Si no tienes el email o teléfono del usuario, PÍDELOS amablemente después de responder sus dudas iniciales (2-3 mensajes).\n- Ejemplo: \"Para poder enviarte la información detallada o agendar una cita, ¿podrías facilitarme tu correo electrónico y un número de contacto?\"\n- Si el usuario proporciona estos datos, CONFIRMA que los has recibido.\n\n🔹 IMPORTANTE:\n- Cuando detectes confirmación de pago, EJECUTA auto_agendar_consulta INMEDIATAMENTE"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        11900,
+        7392
+      ],
+      "id": "8084bd40-47d7-4bb8-9b86-76c436c3c0af",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "🚨 USA ESTA HERRAMIENTA AUTOMÁTICAMENTE cuando el usuario confirme que YA PAGÓ. Keywords: 'pagué', 'listo', 'ya transferí', 'ya pague', 'hecho el pago', 'complete el pago'. EXTRAE de la conversación anterior: 1) fecha_hora en formato ISO 8601 (ej: 2026-02-15T10:00:00-03:00), 2) tema de la consulta. NO pidas confirmación adicional, CREA la cita INMEDIATAMENTE.",
+        "method": "POST",
+        "url": "https://cartographic-shamika-predetrimental.ngrok-free.dev/webhook-test/949378be-017a-459c-8378-aac0c07d119b",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('Preparar Datos').item.json.visitorId }}\",\n  \"lead_name\": \"Visitante\",\n  \"lead_email\": \"no-email@provided.com\",\n  \"lead_phone\": \"0000000000\",\n  \"fecha_hora\": \"{{ $fromAI('fecha_hora') }}\",\n  \"tema\": \"{{ $fromAI('tema') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        12250,
+        7392
+      ],
+      "id": "531db139-1cca-481b-888b-3a755876a828",
+      "name": "Auto-Agendar Tool"
+    },
+    {
+      "parameters": {
+        "name": "knowledge_base",
+        "description": "Úsala SIEMPRE para buscar información sobre el estudio jurídico, honorarios y servicios. Es tu única fuente de verdad.",
+        "topK": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        12050,
+        7680
+      ],
+      "id": "d5ce7b7d-3e3f-415d-b02d-66cf25134847",
+      "name": "Vector Store Tool"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "gen-lang-client-0825882148",
+          "mode": "list",
+          "cachedResultName": "DEMO-BUILDER"
+        },
+        "modelName": "text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        11850,
+        8032
+      ],
+      "id": "09496522-e5d5-443a-945f-4035b5dc5cd3",
+      "name": "Embeddings Google Vertex"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "gen-lang-client-0468317049",
+          "mode": "list",
+          "cachedResultName": "PRO GEMINI"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        11700,
+        7536
+      ],
+      "id": "dc395923-3fa8-4966-a53f-6b27e17f738c",
+      "name": "Google Vertex Chat Model"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        11900,
+        7600
+      ],
+      "id": "3b9fd866-de10-4513-b8b1-2fc69a58ad38",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "gen-lang-client-0825882148",
+          "mode": "list",
+          "cachedResultName": "DEMO-BUILDER"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        12200,
+        7856
+      ],
+      "id": "cf8fb837-61d7-4fca-97a0-973acab6e727",
+      "name": "Google Vertex Chat Model5"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Herramienta para ver espacios disponibles en el calendario. Horario de atención: 9am-3pm (lunes a viernes). Devuelve lista de horarios en intervalos de 1 hora, marcando los ocupados.",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/86b158a9564f8d1ac7d4bf304decb80b992450653928999bfcc5edec3c82aabc@group.calendar.google.com/events",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        12350,
+        7616
+      ],
+      "id": "1646ed18-0602-4093-9a44-8faa80abb159",
+      "name": "HTTP Request - Ver Disponibilidad",
+      "credentials": {
+        "googleApi": {
+          "id": "RFqA1d2B3Rh5M7f4",
+          "name": "calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "document_embeddings",
+          "mode": "list",
+          "cachedResultName": "document_embeddings"
+        },
+        "options": {
+          "queryName": "match_documents",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "client_id",
+                "value": "={{ $('Preparar Datos').item.json.clientId }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        11850,
+        7840
+      ],
+      "id": "497e17ec-c5c7-413b-a061-30644d61e58e",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgyjJcAPwMaGdxSp",
+          "name": "legal service 1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatInput = $json.chatInput || '';\n\nlet summary = 'Conversación en curso. ';\nlet extractedEmail = null;\nlet extractedPhone = null;\n\n// Detección de Email\nconst emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}/;\nconst emailMatch = chatInput.match(emailRegex);\nif (emailMatch) extractedEmail = emailMatch[0];\n\n// Detección de Teléfono\nconst phoneRegex = /(\\+?\\d{1,3}[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}/;\nconst phoneMatch = chatInput.match(phoneRegex);\nif (phoneMatch) extractedPhone = phoneMatch[0];\n\n// Resumen y Urgencia (Simplificado para el input actual)\nif (chatInput) {\n  const urgentKeywords = ['urgente', 'emergencia', 'ahora', 'ya', 'pronto'];\n  \n  const topics = {\n    'divorcio': /divorcio|separación|custodia/i,\n    'laboral': /despido|trabajo|empleado|finiquito/i,\n    'penal': /detenido|arresto|penal|delito/i,\n    'civil': /demanda|contrato|deuda/i\n  };\n  \n  let detectedTopics = [];\n  for (const [topic, regex] of Object.entries(topics)) {\n    if (regex.test(chatInput)) {\n      detectedTopics.push(topic);\n    }\n  }\n  \n  summary = detectedTopics.length > 0 \n    ? `Consulta sobre: ${detectedTopics.join(', ')}. ${chatInput.substring(0, 150)}...`\n    : `${chatInput.substring(0, 200)}...`;\n}\n\nreturn {\n  json: {\n    visitorId: $json.visitorId,\n    clientId: $json.clientId,\n    aiSummary: summary,\n    urgency: summary.toLowerCase().includes('urgente') ? 'high' : 'medium',\n    updatedAt: new Date().toISOString(),\n    extractedEmail,\n    extractedPhone\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12200,
+        7184
+      ],
+      "id": "12488275-fecb-4d05-a4cb-9a504c79e4ef",
+      "name": "Generar Resumen AI"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "visitor_id",
+              "keyValue": "={{ $json.visitorId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        12450,
+        7184
+      ],
+      "id": "get-lead-node",
+      "name": "Buscar Lead",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgyjJcAPwMaGdxSp",
+          "name": "legal service 1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "lead-exists",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        12650,
+        7184
+      ],
+      "id": "check-lead-exists",
+      "name": "Existe Lead?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "visitor_id",
+              "keyValue": "={{ $('Generar Resumen AI').item.json.visitorId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "ai_summary",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.aiSummary }}"
+            },
+            {
+              "fieldId": "urgency",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.urgency }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.updatedAt }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.extractedEmail || $json.email }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.extractedPhone || $json.phone }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        12900,
+        7100
+      ],
+      "id": "7881094d-b770-4eb7-9d5e-fa88b9552a9f",
+      "name": "Actualizar Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgyjJcAPwMaGdxSp",
+          "name": "legal service 1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "client_id",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.clientId }}"
+            },
+            {
+              "fieldId": "visitor_id",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.visitorId }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "Visitante"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.extractedEmail }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.extractedPhone }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "new"
+            },
+            {
+              "fieldId": "urgency",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.urgency }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "website"
+            },
+            {
+              "fieldId": "ai_summary",
+              "fieldValue": "={{ $('Generar Resumen AI').item.json.aiSummary }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        12900,
+        7300
+      ],
+      "id": "create-lead-node",
+      "name": "Crear Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "qgyjJcAPwMaGdxSp",
+          "name": "legal service 1"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generar Resumen AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Auto-Agendar Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Vertex": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Ver Disponibilidad": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Resumen AI": {
+      "main": [
+        [
+          {
+            "node": "Buscar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Lead": {
+      "main": [
+        [
+          {
+            "node": "Existe Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existe Lead?": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Crear Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9ed876b851fb4711793a5e9389a8711ee465ba981fa2e63cf056d69508d1f129"
+  }
+}

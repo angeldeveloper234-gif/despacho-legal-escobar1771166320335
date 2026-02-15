@@ -1,0 +1,10 @@
+{
+    "thinking": "Test injection",
+    "files": [
+        {
+            "path": "src/test_injection.txt",
+            "content": "Injection successful!"
+        }
+    ],
+    "dependencies": []
+}

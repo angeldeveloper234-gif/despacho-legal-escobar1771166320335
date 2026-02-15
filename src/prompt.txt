@@ -1,0 +1,52 @@
+Entiendo perfectamente tu duda. Vamos a aclarar la arquitectura de datos para que sea sólida y escalable.
+Tienes razón: Las visitas deben estar relacionadas con el ID del usuario (Dueño de la Landing) para mantener la integridad de la base de datos.
+¿Cómo funciona la relación?
+En este escenario tenemos 2 actores:
+1.  El Visitante (Anónimo): Alguien que entra a la web. No tiene usuario en tu sistema. Lo identificamos con un visitor_id (cookie/localstorage).
+2.  El Cliente (Dueño): El abogado o profesional que contrató la landing. Este SÍ es un usuario en tu tabla auth.users y public.profiles.
+La tabla analytics_events actúa como el puente. Cada fila dice: "El visitante X vio la página Y, y esta página pertenece al Cliente Z".
+El Problema Actual vs. La Solución Correcta
+Actualmente en el código pusimos:
+landingClientId: "client-demo-001" (Esto es un texto de ejemplo).
+Si en tu base de datos Supabase la columna client_id es simplemente de tipo text, funcionará, pero es "débil". Si borras al usuario, las visitas quedan huérfanas.
+La Lógica Correcta (Relacional):
+Para que esté bien hecho en Supabase, el landingClientId en el archivo de configuración debe ser el UUID real del usuario (el mismo que está en auth.users y profiles).
+Pasos para dejarlo perfecto:
+1. Configuración en Supabase (SQL)
+Debes asegurarte de que tu tabla de visitas tenga una "Foreign Key" (Llave foránea) que apunte a la tabla de perfiles. Ejecuta esto en el Editor SQL de Supabase si no lo tienes así:
+create table if not exists public.analytics_events (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  event_type text not null, -- 'session_start', 'page_view', etc.
+  page_path text,
+  visitor_id text, -- ID del visitante anónimo
+  metadata jsonb,
+  
+  -- AQUÍ ESTÁ LA CLAVE DE LA RELACIÓN
+  client_id uuid references public.profiles(id) on delete cascade not null
+);
+-- Habilitar seguridad (RLS) para que nadie pueda insertar basura
+alter table public.analytics_events enable row level security;
+-- Política: Cualquiera (anon) puede INSERTAR visitas (porque es una landing pública)
+create policy "Cualquiera puede registrar visitas"
+  on public.analytics_events for insert
+  with check (true);
+-- Política: Solo el DUEÑO de la data puede VER sus visitas
+create policy "Usuarios ven sus propias visitas"
+  on public.analytics_events for select
+  using (auth.uid() = client_id);
+2. Configuración en el Proyecto (src/config.ts)
+Ahora, cuando generes una landing para un cliente, debes ir a su perfil en Supabase, copiar su id (UUID) y pegarlo en el config:
+export const config = {
+    // AHORA SÍ: Usamos el UUID real que conecta con la tabla profiles
+    landingClientId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 
+    
+    // ... resto de la config
+};
+Resumen
+*   ¿Están relacionadas?: Sí, conceptualmente.
+*   ¿Cómo forzar la relación?: Usando una columna uuid con references public.profiles(id) en la tabla de visitas.
+*   ¿Qué logro con esto?:
+    1.  Si borras al usuario, se borran sus visitas automáticamente (limpieza).
+    2.  El dashboard es seguro: auth.uid() = client_id garantiza que nadie vea las visitas de otro.
+    3.  Integridad total de los datos.
