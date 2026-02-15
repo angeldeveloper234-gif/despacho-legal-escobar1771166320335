@@ -7,6 +7,10 @@ import { useLocation } from "react-router-dom";
 import { trackEvent } from "@/lib/analytics";
 import { useVisitTracker } from "@/hooks/useVisitTracker";
 
+import { Navbar } from "@/components/sections/Navbar";
+import { Footer } from "@/components/sections/Footer";
+import { LegalBotWidget } from "@/components/features/chat/LegalBotWidget";
+import { config } from "@/config";
 import { MobileConversionBar } from "@/components/ui/MobileConversionBar";
 
 function AnalyticsTracker() {
@@ -37,12 +41,15 @@ function App() {
     return (
         <UserProvider>
             <Router>
-                <div className="relative">
+                <div className="relative min-h-screen bg-zinc-950 overflow-x-hidden">
+                    <div className="noise-bg" />
                     <AnalyticsTracker />
+                    <Navbar />
                     <Routes>
                         <Route path="/" element={<Home />} />
-                        <Route path="/feedback" element={<Feedback />} />
                     </Routes>
+                    <Footer />
+                    <LegalBotWidget clientId={config.landingClientId} />
                     <MobileConversionBar />
                 </div>
             </Router>

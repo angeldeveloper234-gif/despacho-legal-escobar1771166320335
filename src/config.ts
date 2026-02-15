@@ -18,7 +18,7 @@ export const config = {
 
     // Chatbot Configuration
     chatbot: {
-        webhookUrl: import.meta.env.VITE_N8N_CHAT_WEBHOOK || "",
+        webhookUrl: import.meta.env.VITE_N8N_CHAT_WEBHOOK || "https://cartographic-shamika-predetrimental.ngrok-free.dev/webhook/187f7214-634a-4ba4-ae42-f1518eb50fa2/chat",
         ui: {
             title: "Asistencia Legal IA 24/7",
             subtitle: "Pre-Análisis de Caso Automatizado",
