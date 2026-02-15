@@ -3,6 +3,7 @@ import { Message } from '../../../hooks/useChat';
 import { Bot, User, Volume2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpeech } from '../../../hooks/useSpeech';
+import { config } from '../../../config';
 
 interface ChatWindowProps {
     messages: Message[];
@@ -12,6 +13,7 @@ interface ChatWindowProps {
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
     const { speak, isSpeaking, stopSpeaking } = useSpeech();
+    const { ui } = config.chatbot;
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -24,7 +26,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 custom-scrollbar">
             <AnimatePresence>
                 {messages.map((msg) => (
                     <motion.div
@@ -34,24 +36,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
                         className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                         {/* Avatar */}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'bot' ? 'bg-blue-600' : 'bg-zinc-700'
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border border-white/10 overflow-hidden ${msg.sender === 'bot' ? `bg-gradient-to-tr ${ui.gradient}` : 'bg-zinc-800'
                             }`}>
-                            {msg.sender === 'bot' ? <Bot size={16} className="text-white" /> : <User size={16} className="text-zinc-300" />}
+                            {msg.sender === 'bot' ? (
+                                ui.avatarUrl ? <img src={ui.avatarUrl} alt="B" className="w-full h-full object-cover" /> : <Bot size={16} className="text-white" />
+                            ) : (
+                                <User size={16} className="text-zinc-300" />
+                            )}
                         </div>
 
                         {/* Message Bubble */}
-                        <div className={`flex flex-col max-w-[80%] ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className={`p-3 rounded-2xl text-sm leading-relaxed relative group ${msg.sender === 'user'
-                                    ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20 rounded-tr-sm'
-                                    : 'bg-zinc-800 text-zinc-100 border border-white/10 rounded-tl-sm'
+                        <div className={`flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                            <div className={`p-4 rounded-2xl text-sm leading-relaxed relative group shadow-sm ${msg.sender === 'user'
+                                ? 'bg-zinc-800 text-zinc-100 border border-white/5 rounded-tr-sm'
+                                : `bg-gradient-to-tr from-zinc-900 to-zinc-950 text-white border border-white/10 rounded-tl-sm`
                                 }`}>
-                                <p className="whitespace-pre-wrap">{msg.text}</p>
+                                <p className="whitespace-pre-wrap break-words overflow-hidden">{msg.text}</p>
 
                                 {/* Audio Output Button (Only for Bot) */}
                                 {msg.sender === 'bot' && (
                                     <button
                                         onClick={() => isSpeaking ? stopSpeaking() : speak(msg.text)}
-                                        className={`absolute -right-8 top-1 p-1.5 rounded-full bg-zinc-800 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-400 hover:bg-zinc-700 ${isSpeaking ? 'text-blue-500 opacity-100' : ''}`}
+                                        className={`absolute -right-10 top-2 p-1.5 rounded-full bg-zinc-900 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#C6A87C] hover:bg-zinc-800 ${isSpeaking ? 'text-[#C6A87C] opacity-100' : ''}`}
                                         title="Escuchar"
                                     >
                                         <Volume2 size={14} />
@@ -70,7 +76,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
                                                 href={source.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                                                className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded border border-white/10 hover:text-[#C6A87C] hover:border-[#C6A87C]/30 transition-colors"
                                             >
                                                 {source.title || 'Fuente'}
                                             </a>
@@ -99,13 +105,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
 
             {isLoading && (
                 <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-tr ${ui.gradient} flex items-center justify-center shrink-0 shadow-lg`}>
                         <Bot size={16} className="text-white" />
                     </div>
-                    <div className="bg-zinc-800 border border-white/10 p-4 rounded-2xl rounded-tl-sm flex gap-1 items-center">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="bg-zinc-900 border border-white/10 p-4 rounded-2xl rounded-tl-sm flex gap-1.5 items-center">
+                        <div className="w-1.5 h-1.5 bg-[#C6A87C] rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 bg-[#C6A87C]/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-[#C6A87C]/30 rounded-full animate-bounce"></div>
                     </div>
                 </div>
             )}

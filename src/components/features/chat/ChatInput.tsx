@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Mic, MicOff } from 'lucide-react';
 import { useSpeech } from '../../../hooks/useSpeech';
+import { config } from '../../../config';
 
 interface ChatInputProps {
     onSend: (text: string) => void;
@@ -8,6 +9,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
+    const { ui } = config.chatbot;
     const [inputValue, setInputValue] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { isListening, startListening, stopListening, transcript, setTranscript } = useSpeech();
@@ -54,10 +56,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
     };
 
     return (
-        <div className="p-4 border-t border-white/10 bg-zinc-900/90 backdrop-blur-sm relative">
+        <div className="p-4 border-t border-white/10 bg-zinc-900/90 backdrop-blur-sm relative overflow-hidden">
             {/* Visual Feedback for Voice */}
             {isListening && (
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2">
+                <div className={`absolute -top-10 left-1/2 -translate-x-1/2 bg-gradient-to-r ${ui.gradient} text-white text-xs px-3 py-1 rounded-full animate-pulse flex items-center gap-2 shadow-lg`}>
                     <Mic size={12} /> Escuchando...
                 </div>
             )}
@@ -66,8 +68,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
                 <button
                     onClick={toggleListening}
                     className={`p-2 rounded-lg transition-colors ${isListening
-                            ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
-                            : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-white/10 text-[#C6A87C] hover:bg-white/20'
+                        : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                         }`}
                     title={isListening ? "Detener grabación" : "Usar micrófono"}
                 >
@@ -79,7 +81,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
                     value={inputValue}
                     onChange={handleInput}
                     onKeyDown={handleKeyDown}
-                    placeholder="Escribe o habla..."
+                    placeholder={ui.placeholder}
                     className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-100 placeholder:text-zinc-500 resize-none max-h-32 py-2"
                     rows={1}
                 />
@@ -87,7 +89,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
                 <button
                     onClick={handleSend}
                     disabled={!inputValue.trim() || isLoading}
-                    className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className={`p-2 bg-gradient-to-tr ${ui.gradient} text-white rounded-lg hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#C6A87C]/10`}
                 >
                     <Send size={18} />
                 </button>

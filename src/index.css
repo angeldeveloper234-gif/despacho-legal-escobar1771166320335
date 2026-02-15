@@ -2,24 +2,30 @@
 @import "tailwindcss";
 
 @theme {
-    --color-background: #030303;
+    --color-background: #0D0D0D;
+    /* Deep Obsidian */
     --color-foreground: #fafafa;
 
     --color-primary: #C6A87C;
+    /* Signature Gold */
     --color-primary-foreground: #000000;
 
-    --color-muted: #1a1a1a;
+    --color-accent-gold: #D4AF37;
+    /* Metallic Accent */
+    --color-steel: #A1A1AA;
+
+    --color-muted: #141414;
     --color-muted-foreground: #a1a1aa;
 
-    --color-card: #0a0a0a;
+    --color-card: #121212;
     --color-card-foreground: #fafafa;
 
-    --color-border: #333333;
+    --color-border: #262626;
 
-    --radius-lg: 0rem;
-    --radius-md: 0rem;
-    --radius-sm: 0rem;
-    
+    --radius-lg: 0.5rem;
+    --radius-md: 0.25rem;
+    --radius-sm: 0.125rem;
+
     --font-display: 'Playfair Display', serif;
     --font-sans: 'Inter', sans-serif;
 }
@@ -35,16 +41,43 @@
         background-color: #030303;
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         @apply font-display;
     }
 }
 
 @layer utilities {
     .glass-panel {
-        @apply bg-[#030303]/80 backdrop-blur-md border border-white/10;
+        @apply bg-[#0D0D0D]/80 backdrop-blur-md border border-white/10;
     }
-    
+
+    .active-badge {
+        position: relative;
+    }
+
+    .active-badge::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: currentColor;
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .active-badge:hover::after {
+        transform: scaleX(1);
+        transform-origin: left;
+    }
+
     .noise-bg {
         position: fixed;
         top: 0;

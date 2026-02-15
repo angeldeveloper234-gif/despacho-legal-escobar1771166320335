@@ -7,10 +7,12 @@ import { useLocation } from "react-router-dom";
 import { trackEvent } from "@/lib/analytics";
 import { useVisitTracker } from "@/hooks/useVisitTracker";
 
+import { MobileConversionBar } from "@/components/ui/MobileConversionBar";
+
 function AnalyticsTracker() {
     const location = useLocation();
     const { clientId } = useUser();
-    
+
     // Initialize global analytics (visit tracking)
     useVisitTracker();
 
@@ -21,7 +23,7 @@ function AnalyticsTracker() {
     // But if they navigate, we might want to know.
     // Given the user complaint about "duplicates", let's comment this out for now
     // and rely ONLY on session_start for the "Visit" count.
-    
+
     /* 
     useEffect(() => {
         trackEvent("page_view", { path: location.pathname }, clientId);
@@ -41,6 +43,7 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/feedback" element={<Feedback />} />
                     </Routes>
+                    <MobileConversionBar />
                 </div>
             </Router>
         </UserProvider>

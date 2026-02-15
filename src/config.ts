@@ -12,23 +12,25 @@ export const config = {
     },
 
     // External Links
-    bookingUrl: "#contact", 
-    paymentLink: "https://buy.stripe.com/", 
+    bookingUrl: "#contact",
+    paymentLink: "https://buy.stripe.com/",
     googleMapsReviewUrl: "https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID",
 
     // Chatbot Configuration
     chatbot: {
-        webhookUrl: import.meta.env.VITE_N8N_CHAT_WEBHOOK || "https://cartographic-shamika-predetrimental.ngrok-free.dev/webhook/187f7214-634a-4ba4-ae42-f1518eb50fa2/chat",
-        
+        webhookUrl: import.meta.env.VITE_N8N_CHAT_WEBHOOK || "",
         ui: {
-            title: "Asistente Legal",
-            subtitle: "Escobar & Asociados",
-            footerText: "Defensa Corporativa Inteligente",
-            primaryColor: "bg-[#C6A87C] hover:bg-[#b0936a]", 
+            title: "Asistencia Legal IA 24/7",
+            subtitle: "Pre-Análisis de Caso Automatizado",
+            placeholder: "Describa su situación jurídica...",
+            launcherLabel: "Escríbenos",
+            footerText: "Secretaría Ejecutiva | Respuesta Inmediata",
+            avatarUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=400&auto=format&fit=crop", // Senior Paralegal Persona
+            primaryColor: "bg-[#C6A87C] hover:bg-[#b0936a]",
             gradient: "from-[#C6A87C] to-[#8c7350]",
             accentColor: "bg-red-500"
         },
-        
+
         messages: {
             welcome: "Bienvenido a Escobar & Asociados. ¿En qué asunto legal podemos asistirle hoy?",
             reset: "Conversación reiniciada.",
@@ -37,6 +39,61 @@ export const config = {
             negativeIntentKeywords: ['no me sirve', 'inútil', 'basura', 'humano', 'persona']
         }
     },
+
+    // Dynamic Content (Architecture of Persuasion)
+    dynamicContent: {
+        city: "Veracruz",
+        localAnchor: "Frente al Tribunal Superior de Justicia",
+        stats: {
+            casesWon: 1250,
+            experienceYears: 23,
+            recoveredAmount: "15.4" // In millions
+        },
+        specialization: {
+            title: "Corporativa", // Penal, Corporativo, Familia
+            pain: "Incertidumbre Patrimonio",
+            ego: "Protección de Legado",
+            hook: "Defensa Estratégica"
+        },
+        roadmap: [
+            { step: "01", title: "Diagnóstico", desc: "Evaluación de Caso 24h con análisis de viabilidad técnica." },
+            { step: "02", title: "Estrategia", desc: "Diseño de Defensa a Medida alineada a sus objetivos patrimoniales." },
+            { step: "03", title: "Resolución", desc: "Protección en Tribunales con ejecución técnica implacable." }
+        ],
+        pricing: {
+            basic: "Asesoría Básica: Inversión desde $3,500 MXN",
+            comprehensive: "Defensa Integral: Inversión según complejidad",
+            retainer: "Iguala Mensual: Seguridad Legal Permanente"
+        }
+    },
+
+    // Real Testimonials Data
+    testimonials: [
+        {
+            name: "Jose Luis Pinzon Pucheta",
+            role: "Local Guide",
+            text: "Muy grata experiencia. Su equipo demostró gran profesionalismo... resolvieron mi caso de manera eficiente.",
+            tags: ["Eficiencia", "Trato Humano"]
+        },
+        {
+            name: "Dhalia Lois",
+            role: "Cliente Verificada",
+            text: "Gente amable, profesional... me ayudó con la asesoría que me dieron para llevar mi caso sin problema.",
+            tags: ["Asesoría Clara"]
+        },
+        {
+            name: "Karina",
+            role: "Cliente Verificada",
+            text: "Excelente servicio... Atención 100% personalizada y aclaran todas tus dudas!",
+            tags: ["Personalización"]
+        },
+        {
+            name: "Gabriel Rafael Cuevas",
+            role: "Cliente Verificado",
+            text: "Me despacharon bien y legal 10/10.",
+            tags: ["Resultado Directo"]
+        }
+    ],
 
     // Demo User Data
     demoUser: {

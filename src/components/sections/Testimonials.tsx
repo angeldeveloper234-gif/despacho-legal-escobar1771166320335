@@ -1,51 +1,60 @@
 import { motion } from "framer-motion";
-import { Quote } from "lucide-react";
-
-const testimonials = [
-    { 
-        name: "Jose Luis Pinzon", 
-        text: "Su equipo demostró gran profesionalismo. Resolvieron mi caso de manera eficiente.", 
-        image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=400&auto=format&fit=crop" 
-    },
-    { 
-        name: "Dhalia Lois", 
-        text: "Gente amable y profesional. Me ayudaron con la asesoría para llevar mi caso sin problema.", 
-        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=400&auto=format&fit=crop" 
-    }
-];
+import { Quote, Star } from "lucide-react";
+import { config } from "@/config";
 
 export function Testimonials() {
+    const { testimonials } = config;
+
     return (
-        <section id="testimonials" className="py-32 bg-[#050505]">
+        <section id="testimonials" className="py-32 bg-[#050505] relative overflow-hidden">
             <div className="container mx-auto px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                <div className="text-center mb-24">
+                    <p className="text-[#C6A87C] font-sans text-xs tracking-[0.4em] uppercase font-bold mb-4">Prueba de Resultados</p>
+                    <h2 className="text-4xl md:text-6xl font-display text-white">
+                        Viviendo la <span className="text-[#C6A87C] italic">Excelencia</span>
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     {testimonials.map((item, i) => (
-                        <motion.div 
+                        <motion.div
                             key={i}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ delay: i * 0.2 }}
-                            className="relative"
+                            transition={{ delay: i * 0.1 }}
+                            className="bg-zinc-950/50 border border-white/5 p-8 md:p-12 rounded-3xl hover:border-[#C6A87C]/30 transition-all duration-500 group"
                         >
-                            <div className="flex flex-col md:flex-row gap-8 items-start">
-                                <div className="w-full md:w-1/3 aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-700">
-                                    <img 
-                                        src={item.image} 
-                                        alt={item.name} 
-                                        className="w-full h-full object-cover"
-                                    />
+                            <div className="flex flex-col h-full">
+                                <div className="flex gap-1 mb-8">
+                                    {[...Array(5)].map((_, index) => (
+                                        <Star key={index} size={20} className="fill-[#C6A87C] text-[#C6A87C]" />
+                                    ))}
                                 </div>
-                                <div className="flex-1 pt-4">
-                                    <Quote className="w-8 h-8 text-[#C6A87C] mb-6 opacity-50" />
-                                    <p className="text-2xl md:text-3xl font-display text-white leading-tight mb-8">
-                                        "{item.text}"
-                                    </p>
-                                    <div className="border-t border-[#C6A87C]/30 pt-4">
-                                        <p className="text-[#C6A87C] font-sans text-xs tracking-widest uppercase">
+
+                                <p className="text-xl md:text-2xl font-sans font-light text-white leading-relaxed mb-8 flex-1 italic group-hover:text-[#C6A87C]/90 transition-colors">
+                                    "{item.text}"
+                                </p>
+
+                                <div className="flex flex-wrap gap-2 mb-10">
+                                    {item.tags.map((tag, idx) => (
+                                        <span key={idx} className="bg-[#C6A87C]/10 text-[#C6A87C] text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-[#C6A87C]/20">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center gap-4 pt-8 border-t border-white/5">
+                                    <div className="w-12 h-12 rounded-full bg-[#C6A87C]/20 flex items-center justify-center text-[#C6A87C] font-display font-bold text-xl">
+                                        {item.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-sans text-sm font-bold tracking-wider uppercase">
                                             {item.name}
                                         </p>
-                                        <p className="text-zinc-600 text-xs mt-1">Cliente Verificado</p>
+                                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest mt-0.5">
+                                            {item.role}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
