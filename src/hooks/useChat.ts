@@ -8,54 +8,151 @@ import { getTrafficSource } from '@/lib/traffic';
 // Types
 export interface Message {
     id: string;
-    text: string;
+    text?: string;
+    image?: string;
+    video?: string;
     sender: 'user' | 'bot';
     timestamp: Date;
     sources?: Array<{ title: string; url: string }>;
-    escalate?: boolean; // If true, show "Contact Human" option
+    escalate?: boolean;
+    options?: string[];
 }
 
 export interface UseChatProps {
-    // webhookUrl is now optional here as it defaults to config
-    webhookUrl?: string;
     clientId: string;
 }
 
-export const useChat = ({ webhookUrl = config.chatbot.webhookUrl, clientId }: UseChatProps) => {
+export const useChat = ({ clientId }: UseChatProps) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState<string>('');
     const [isOpen, setIsOpen] = useState(false);
 
-    // 1. Initialize Session & Load History
-    useEffect(() => {
-        let storedSessionId = localStorage.getItem('chat_session_id');
-        if (!storedSessionId) {
-            storedSessionId = window.crypto.randomUUID();
-            localStorage.setItem('chat_session_id', storedSessionId);
-        }
-        setSessionId(storedSessionId);
+    const { typebot, apiHost } = config.chatbot;
 
-        // Load messages from local storage (Client-side persistence for "refresh" safety)
-        const storedMessages = localStorage.getItem(`chat_history_${storedSessionId}`);
-        if (storedMessages) {
-            try {
-                const parsed = JSON.parse(storedMessages);
-                // Fix date strings back to Date objects
-                setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
-            } catch (e) {
-                console.error("Failed to parse chat history", e);
-            }
-        } else {
-            // Initial greeting if no history
-            setMessages([{
-                id: 'init-1',
-                text: config.chatbot.messages.welcome,
-                sender: 'bot',
-                timestamp: new Date()
-            }]);
+    // Helper to parse Typebot responses (text, images, videos, choices)
+    const parseTypebotResponse = (data: any): Partial<Message>[] => {
+        const messages: Partial<Message>[] = [];
+
+        if (data.messages) {
+            data.messages.forEach((msg: any) => {
+                const newMsg: Partial<Message> = {};
+
+                if (msg.type === 'text') {
+                    // Extract text from richText structure or direct content
+                    if (msg.content?.richText) {
+                        newMsg.text = msg.content.richText
+                            .map((block: any) => {
+                                const children = block.children || [];
+                                return children.map((child: any) => child.text || '').join('');
+                            })
+                            .join('\n');
+                    } else if (typeof msg.content === 'string') {
+                        newMsg.text = msg.content;
+                    } else if (msg.content?.text) {
+                        newMsg.text = msg.content.text;
+                    }
+                } else if (msg.type === 'image') {
+                    newMsg.image = msg.content?.url || msg.url || msg.content;
+                } else if (msg.type === 'video' || msg.type === 'gif' || msg.type === 'video input') {
+                    newMsg.video = msg.content?.url || msg.url || msg.content;
+                } else if (msg.type === 'embed') {
+                    newMsg.video = msg.content?.url || msg.url || msg.content;
+                }
+
+                if (newMsg.text || newMsg.image || newMsg.video) {
+                    messages.push(newMsg);
+                }
+            });
         }
-    }, [clientId]);
+
+        const input = data.input;
+        if (input && (input.type === 'choice' || input.type === 'buttons' || input.type === 'choice input' || input.type?.includes('choice'))) {
+            const items = input.items || [];
+            const options = items.map((item: any) => item.content || item.label || item.item || item.text);
+
+            if (options.length > 0) {
+                if (messages.length > 0) {
+                    messages[messages.length - 1].options = options;
+                } else {
+                    messages.push({ text: 'Selecciona una opción:', options });
+                }
+            }
+        }
+
+        return messages;
+    };
+
+    // 1. Initialize Session & Load History or Start New
+    useEffect(() => {
+        const initChat = async () => {
+            let storedSessionId = localStorage.getItem('chat_session_id');
+            const storedMessages = localStorage.getItem(`chat_history_${storedSessionId}`);
+
+            if (storedSessionId && storedMessages) {
+                setSessionId(storedSessionId);
+                try {
+                    const parsed = JSON.parse(storedMessages);
+                    setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+                } catch (e) {
+                    console.error("Failed to parse chat history", e);
+                }
+            } else {
+                // Call Typebot startChat
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`${apiHost}/api/v1/typebots/${typebot}/startChat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            isStreamEnabled: false,
+                            prefilledVariables: {
+                                "Client ID": clientId,
+                                "Platform": "Web / Escobar Legal",
+                                "URL": window.location.href,
+                                "Visitor ID": getVisitorId(),
+                                "Traffic Source": getTrafficSource()
+                            }
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (data.sessionId) {
+                        setSessionId(data.sessionId);
+                        setIsLoading(false);
+                    }
+
+                    const botMsgsData = parseTypebotResponse(data);
+                    const newMessages: Message[] = botMsgsData.map((m, i) => ({
+                        id: `init-${i}`,
+                        text: m.text,
+                        image: m.image,
+                        video: m.video,
+                        options: m.options,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    }));
+
+                    if (newMessages.length === 0) {
+                        newMessages.push({
+                            id: 'init-default',
+                            text: config.chatbot.messages.welcome,
+                            sender: 'bot',
+                            timestamp: new Date()
+                        });
+                    }
+
+                    setMessages(newMessages);
+                } catch (error) {
+                    console.error("Failed to start Typebot chat", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        initChat();
+    }, [typebot, apiHost, clientId]);
 
     // 2. Persist Messages on Change
     useEffect(() => {
@@ -64,57 +161,9 @@ export const useChat = ({ webhookUrl = config.chatbot.webhookUrl, clientId }: Us
         }
     }, [messages, sessionId]);
 
-        // [NEW] Agent 2: Data Enrichment Trigger
-    useEffect(() => {
-        const enrichSession = async () => {
-            if (!sessionId) return;
-
-            // Avoid re-enriching if already done for this session (optimization)
-            const isEnriched = sessionStorage.getItem(`enriched_${sessionId}`);
-            if (isEnriched) return;
-
-            try {
-                // 1. Get Client IP (Client-side)
-                const ipRes = await fetch('https://api64.ipify.org?format=json');
-                const { ip } = await ipRes.json();
-
-                // 2. Send to Enrichment Webhook (n8n)
-                // Using a dedicated endpoint for enrichment or the same chat webhook with a special action
-                // For this implementation, we'll assume a dedicated 'enrichment' action to the same webhook for simplicity
-                // or a new configurable URL. Let's reuse the botWebhook for now with a different action.
-                await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'enrich_data',
-                        sessionId: sessionId,
-                        visitorId: getVisitorId(),
-                        ip: ip,
-                        metadata: { 
-                            clientId,
-                            traffic_source: getTrafficSource(),
-                            referrer: document.referrer || 'none'
-                        }
-                    })
-                });
-
-                sessionStorage.setItem(`enriched_${sessionId}`, 'true');
-                console.log('Session enriched with IP:', ip);
-            } catch (error) {
-                console.error('Enrichment failed:', error);
-            }
-        };
-
-        enrichSession();
-    }, [sessionId, webhookUrl, clientId]);
-
     // 3. Send Message Logic
     const sendMessage = useCallback(async (text: string) => {
-        if (!text.trim()) return;
-        if (!clientId) {
-            console.error("Client ID missing. Message blocked.");
-            return;
-        }
+        if (!text.trim() || !sessionId) return;
 
         const userMsg: Message = {
             id: window.crypto.randomUUID(),
@@ -127,54 +176,36 @@ export const useChat = ({ webhookUrl = config.chatbot.webhookUrl, clientId }: Us
         setIsLoading(true);
 
         try {
-            // Note: The n8n webhook schema might need adaptation. 
-            // Standardizing on sending { message: text, sessionId: sessionId }
-            const response = await fetch(webhookUrl, {
+            const response = await fetch(`${apiHost}/api/v1/sessions/${sessionId}/continueChat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'sendMessage',
-                    sessionId: sessionId,
-                    visitorId: getVisitorId(),
-                    chatInput: text,
-                    // Additional metadata if needed by n8n workflow
-                    metadata: { 
-                        clientId,
-                        traffic_source: getTrafficSource(),
-                        referrer: document.referrer || 'none'
-                    }
+                    message: text
                 })
             });
-
 
             if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json();
+            const botMsgsData = parseTypebotResponse(data);
 
-            // Expected n8n output: { output: "Bot response text", sources?: [], ... }
-            // OR array of messages. Handling generic object for now.
-            const botText = data.output || data.text || data.message || "Lo siento, tuve un problema procesando tu respuesta.";
-            const sources = data.sources || [];
-
-            // Check for negative intent flag from backend or basic keyword check
-            // Simulating basic keyword check if backend doesn't provide it
-            const isNegative = config.chatbot.messages.negativeIntentKeywords.some(keyword => 
-                text.toLowerCase().includes(keyword)
-            );
-
-            const botMsg: Message = {
+            const botMessages: Message[] = botMsgsData.map(m => ({
                 id: window.crypto.randomUUID(),
-                text: botText,
+                text: m.text,
+                image: m.image,
+                video: m.video,
+                options: m.options,
                 sender: 'bot',
                 timestamp: new Date(),
-                sources: sources,
-                escalate: isNegative // Trigger escalation UI
-            };
+                escalate: config.chatbot.messages.negativeIntentKeywords.some(keyword =>
+                    text.toLowerCase().includes(keyword)
+                )
+            }));
 
-            setMessages(prev => [...prev, botMsg]);
+            setMessages(prev => [...prev, ...botMessages]);
 
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('Error continuing Typebot chat:', error);
             setMessages(prev => [...prev, {
                 id: window.crypto.randomUUID(),
                 text: config.chatbot.messages.error,
@@ -184,18 +215,16 @@ export const useChat = ({ webhookUrl = config.chatbot.webhookUrl, clientId }: Us
         } finally {
             setIsLoading(false);
         }
-    }, [webhookUrl, sessionId, clientId]);
+    }, [sessionId, apiHost]);
 
     const clearHistory = () => {
+        localStorage.removeItem('chat_session_id');
         if (sessionId) {
             localStorage.removeItem(`chat_history_${sessionId}`);
         }
-        setMessages([{
-            id: window.crypto.randomUUID(),
-            text: config.chatbot.messages.reset,
-            sender: 'bot',
-            timestamp: new Date()
-        }]);
+        setSessionId('');
+        setMessages([]);
+        window.location.reload();
     };
 
     return {

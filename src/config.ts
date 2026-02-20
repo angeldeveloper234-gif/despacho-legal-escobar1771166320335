@@ -16,21 +16,21 @@ export const config = {
     paymentLink: "https://buy.stripe.com/",
     googleMapsReviewUrl: "https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID",
 
-    // Chatbot Configuration
+    // Chatbot Configuration (Typebot API Integration)
     chatbot: {
-        webhookUrl: import.meta.env.VITE_N8N_CHAT_WEBHOOK || "https://cartographic-shamika-predetrimental.ngrok-free.dev/webhook/187f7214-634a-4ba4-ae42-f1518eb50fa2/chat",
+        typebot: "lead-generation-rssm2ln",
+        apiHost: "https://chat.angelstudio.design",
         ui: {
             title: "Asistencia Legal IA 24/7",
-            subtitle: "Pre-Análisis de Caso Automatizado",
+            subtitle: "Pre analisis de caso",
             placeholder: "Describa su situación jurídica...",
             launcherLabel: "Escríbenos",
             footerText: "Secretaría Ejecutiva | Respuesta Inmediata",
             avatarUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=400&auto=format&fit=crop", // Senior Paralegal Persona
-            primaryColor: "bg-[#C6A87C] hover:bg-[#b0936a]",
-            gradient: "from-[#C6A87C] to-[#8c7350]",
+            primaryColor: "#0f3460",
+            gradient: "from-[#0f3460] to-[#1a1a2e]",
             accentColor: "bg-red-500"
         },
-
         messages: {
             welcome: "Bienvenido a Escobar & Asociados. ¿En qué asunto legal podemos asistirle hoy?",
             reset: "Conversación reiniciada.",

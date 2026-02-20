@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { config } from '../../../config';
 
 interface LegalBotWidgetProps {
-    webhookUrl?: string;
     clientId: string;
 }
 
@@ -18,10 +17,8 @@ const HOOK_MESSAGES = [
     'Hable con un especialista ahora'
 ];
 
-export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clientId }) => {
-    // Use config URL if prop is not provided
-    const finalWebhookUrl = webhookUrl || config.chatbot.webhookUrl;
-    const { messages, isLoading, sendMessage, isOpen, setIsOpen, clearHistory } = useChat({ webhookUrl: finalWebhookUrl, clientId });
+export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ clientId }) => {
+    const { messages, isLoading, sendMessage, isOpen, setIsOpen, clearHistory } = useChat({ clientId });
     const { ui } = config.chatbot;
 
     const [hookIndex, setHookIndex] = useState(0);
@@ -30,7 +27,6 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
         const handleMouseLeave = (e: MouseEvent) => {
             if (e.clientY <= 0 && !isOpen) {
                 setIsOpen(true);
-                // Optional: trigger a specific exit-intent message logic here
             }
         };
 
@@ -45,7 +41,6 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
             }, 5000);
             return () => clearInterval(interval);
         } else {
-            // Lock body scroll on mobile when chat is open
             const originalStyle = window.getComputedStyle(document.body).overflow;
             if (window.innerWidth < 768) {
                 document.body.style.overflow = 'hidden';
@@ -112,14 +107,15 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsOpen(true)}
-                                className={`relative w-14 h-14 md:w-16 md:h-16 bg-gradient-to-tr ${ui.gradient} text-white rounded-full shadow-2xl transition-all duration-300 group flex items-center justify-center`}
+                                className={`relative w-14 h-14 md:w-16 md:h-16 bg-zinc-950 border border-white/10 text-white rounded-full shadow-2xl transition-all duration-300 group flex items-center justify-center`}
+                                style={{ backgroundColor: ui.primaryColor }}
                             >
-                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center p-0.5">
                                     {ui.avatarUrl ? (
                                         <img
                                             src={ui.avatarUrl}
                                             alt="Secretaría"
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500"
                                         />
                                     ) : (
                                         <MessageCircle size={28} className="group-hover:rotate-12 transition-transform" />
@@ -127,21 +123,19 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
                                 </div>
 
                                 {/* Notification Badge */}
-                                {(messages.length > 0 || true) && (
-                                    <motion.span
-                                        animate={{
-                                            y: [0, -4, 0]
-                                        }}
-                                        transition={{
-                                            duration: 1.5,
-                                            repeat: Infinity,
-                                            ease: "easeInOut"
-                                        }}
-                                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-zinc-950 flex items-center justify-center text-[10px] font-bold"
-                                    >
-                                        1
-                                    </motion.span>
-                                )}
+                                <motion.span
+                                    animate={{
+                                        y: [0, -4, 0]
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-zinc-950 flex items-center justify-center text-[10px] font-bold"
+                                >
+                                    1
+                                </motion.span>
                             </motion.button>
                         </div>
                     </div>
@@ -156,7 +150,7 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
                         animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                         exit={{ opacity: 0, y: 100, scale: 0.9, filter: "blur(10px)" }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[100] md:inset-auto md:bottom-24 md:right-6 w-full h-[100dvh] md:w-[420px] md:h-[650px] md:max-h-[85vh] flex flex-col bg-zinc-950/40 backdrop-blur-2xl border border-white/10 md:rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden"
+                        className="fixed inset-0 z-[100] md:inset-auto md:bottom-24 md:right-6 w-full h-[100dvh] md:w-[420px] md:h-[650px] md:max-h-[85vh] flex flex-col bg-zinc-950/80 backdrop-blur-2xl border border-white/10 md:rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden"
                     >
                         <div className="p-5 border-b border-white/5 bg-white/5 backdrop-blur-md flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -178,7 +172,6 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
                                     </div>
                                 </div>
                             </div>
-
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={clearHistory}
@@ -196,16 +189,14 @@ export const LegalBotWidget: React.FC<LegalBotWidgetProps> = ({ webhookUrl, clie
                             </div>
                         </div>
 
-                        {/* Body */}
+                        {/* Body - Custom Chat Components */}
                         <div className="flex-1 overflow-hidden relative flex flex-col">
-                            <ChatWindow messages={messages} isLoading={isLoading} />
+                            <ChatWindow messages={messages} isLoading={isLoading} onSend={sendMessage} />
                         </div>
 
-                        {/* Input */}
+                        {/* Chat Input and Branding */}
                         <div className="p-4 bg-white/5 backdrop-blur-md border-t border-white/5">
                             <ChatInput onSend={sendMessage} isLoading={isLoading} />
-
-                            {/* Branding */}
                             <div className="mt-4 flex items-center justify-center gap-2 opacity-40 hover:opacity-100 transition-opacity duration-500 cursor-default">
                                 <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-zinc-500"></div>
                                 <span className="text-[10px] text-zinc-400 font-medium tracking-[0.2em] uppercase">

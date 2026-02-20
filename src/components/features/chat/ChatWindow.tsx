@@ -8,16 +8,20 @@ import { config } from '../../../config';
 interface ChatWindowProps {
     messages: Message[];
     isLoading: boolean;
+    onSend?: (text: string) => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading, onSend }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
     const { speak, isSpeaking, stopSpeaking } = useSpeech();
     const { ui } = config.chatbot;
 
     // Auto-scroll to bottom
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const timer = setTimeout(() => {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        return () => clearTimeout(timer);
     }, [messages, isLoading]);
 
     // Format time helper
@@ -47,16 +51,42 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
 
                         {/* Message Bubble */}
                         <div className={`flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className={`p-4 rounded-2xl text-sm leading-relaxed relative group shadow-sm ${msg.sender === 'user'
-                                ? 'bg-zinc-800 text-zinc-100 border border-white/5 rounded-tr-sm'
-                                : `bg-gradient-to-tr from-zinc-900 to-zinc-950 text-white border border-white/10 rounded-tl-sm`
+                            <div className={`rounded-2xl text-sm leading-relaxed relative group shadow-sm overflow-hidden ${msg.sender === 'user'
+                                ? 'bg-zinc-800 text-zinc-100 border border-white/5 rounded-tr-sm p-4'
+                                : `bg-gradient-to-tr from-zinc-900 to-zinc-950 text-white border border-white/10 rounded-tl-sm ${msg.text ? 'p-4' : 'p-0'}`
                                 }`}>
-                                <p className="whitespace-pre-wrap break-words overflow-hidden">{msg.text}</p>
 
-                                {/* Audio Output Button (Only for Bot) */}
-                                {msg.sender === 'bot' && (
+                                {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
+
+                                {msg.image && (
+                                    <div className={`${msg.text ? 'mt-2' : ''} rounded-lg overflow-hidden flex justify-center bg-zinc-900/50`}>
+                                        <img
+                                            src={msg.image}
+                                            alt="Imagen del Bot"
+                                            className="max-w-full h-auto max-h-[400px] object-contain block"
+                                            onError={(e) => {
+                                                console.error("Error loading image:", msg.image);
+                                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x200?text=Error+al+cargar+imagen";
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {msg.video && (
+                                    <div className={`${msg.text ? 'mt-2' : ''} aspect-video bg-black`}>
+                                        <iframe
+                                            src={msg.video}
+                                            className="w-full h-full"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                )}
+
+                                {/* Audio Output Button */}
+                                {msg.sender === 'bot' && msg.text && (
                                     <button
-                                        onClick={() => isSpeaking ? stopSpeaking() : speak(msg.text)}
+                                        onClick={() => isSpeaking ? stopSpeaking() : speak(msg.text!)}
                                         className={`absolute -right-10 top-2 p-1.5 rounded-full bg-zinc-900 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[#C6A87C] hover:bg-zinc-800 ${isSpeaking ? 'text-[#C6A87C] opacity-100' : ''}`}
                                         title="Escuchar"
                                     >
@@ -64,6 +94,48 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, isLoading }) =
                                     </button>
                                 )}
                             </div>
+
+                            {/* Options / Choices (Typebot Integration) - MOVED OUTSIDE BUBBLE */}
+                            {msg.sender === 'bot' && msg.options && msg.options.length > 0 && (
+                                <div className="mt-4 mb-2 space-y-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-700">
+                                    <div className="flex items-center gap-2 px-1">
+                                        <div className="h-[1px] flex-1 bg-white/10"></div>
+                                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest whitespace-nowrap">
+                                            Selecciona una respuesta
+                                        </span>
+                                        <div className="h-[1px] flex-1 bg-white/10"></div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 justify-start items-center">
+                                        {msg.options.map((option, idx) => (
+                                            <motion.button
+                                                key={idx}
+                                                initial={{ scale: 0.9, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                transition={{ delay: idx * 0.1 }}
+                                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(198, 168, 124, 0.2)', borderColor: 'rgba(198, 168, 124, 0.4)' }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => onSend?.(option)}
+                                                className="px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-zinc-200 text-sm font-medium transition-all shadow-lg flex items-center gap-2 group ring-1 ring-white/5"
+                                            >
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[#C6A87C] shadow-[0_0_8px_rgba(198,168,124,0.8)] group-hover:animate-pulse"></div>
+                                                {option}
+                                            </motion.button>
+                                        ))}
+
+                                        {/* "Escribe lo que buscas" Hint Tag */}
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: (msg.options?.length || 0) * 0.1 + 0.3 }}
+                                            className="px-4 py-2 rounded-full border border-dashed border-white/10 bg-transparent text-zinc-600 text-[11px] italic flex items-center gap-2"
+                                        >
+                                            <span className="w-1 h-1 rounded-full bg-zinc-800"></span>
+                                            O escribe lo que buscas...
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Metadata / Sources */}
                             <div className="flex items-center gap-2 mt-1 px-1">
